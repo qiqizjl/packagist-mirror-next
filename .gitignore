@@ -1,3 +1,7 @@
 packagist-mirror.yaml
+prod-packagist-mirror.yaml
 packagist-mirror-next
 .idea
+/data
+vendor
+.DS_Store

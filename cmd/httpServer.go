@@ -1,27 +1,39 @@
 /*
 Copyright © 2022 SeanWang
-
 */
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
+	"packagist-mirror-next/internal/http/router"
+	"packagist-mirror-next/internal/svc"
 )
 
 // httpServerCmd represents the httpServer command
 var httpServerCmd = &cobra.Command{
 	Use:   "httpServer",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Http Server",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("httpServer called")
+		svcCtx, err := svc.NewServiceContext("httpServer")
+		if err != nil {
+			panic(err)
+		}
+		//gin.SetMode(gin.ReleaseMode)
+		g := gin.Default()
+		g.Use(func(ctx *gin.Context) {
+			ctx.Set("svcCtx", svcCtx)
+		})
+		g.GET("/ping", func(ctx *gin.Context) {
+			ctx.String(200, "pong")
+		})
+		distRoute := router.NewDist(svcCtx)
+		g.GET("/:owner/:repo/:version", distRoute.DistGet)
+		statRoute := router.NewStat(svcCtx)
+		g.GET("/stat", statRoute.APIStat)
+		metadataRoute := router.NewMetadata(svcCtx)
+		g.GET("/metadata/requeue-package", metadataRoute.RequeuePackage)
+		g.Run(":8080")
 	},
 }
 

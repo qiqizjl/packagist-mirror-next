@@ -1,0 +1,49 @@
+redis:
+  addr: 127.0.0.1:6379
+  db: 0
+  password: ''
+  pool:
+    size: 30
+    timeout: 5
+
+nsq:
+  tcp_host: 172.20.9.242:4150
+  prefix: packagist-mirror
+  channel: packagist-mirror
+  api_host: 172.20.9.242:4151
+
+file:
+  metadata:
+    drive: qiniu
+    bucket: nxx-composer-metadata
+    cdn_domain: https://repo.packagist.cloud/
+    access_key_id: 'qiYkD3y4MYKUpVrMmBjdXmkyBNZLz8Zwd3E3S-Do'
+    access_key_secret: 'p2Ki14kfc35YXjc3RvZmEMCJEOkbB3nsUn-Df8sS'
+#    endpoint: oss-cn-hangzhou.aliyuncs.com
+  dist:
+    drive: qiniu
+    bucket: nxx-composer-dist
+    cdn_domain: https://repo.packagist.cloud/
+    access_key_id: 'qiYkD3y4MYKUpVrMmBjdXmkyBNZLz8Zwd3E3S-Do'
+    access_key_secret: 'p2Ki14kfc35YXjc3RvZmEMCJEOkbB3nsUn-Df8sS'
+
+remote:
+  repo: https://repo.packagist.org/
+  proxy:
+  api_repo: https://repo.packagist.org/
+  qiniu_proxy: 127.0.0.1:10223
+
+log:
+  level: warning
+
+process:
+  sync_change_list:
+    process_number: 0
+  metadata:
+    process_number: 0
+  packages:
+    process_number: 1
+  provider:
+    process_number: 15
+  provider_package:
+    process_number: 10

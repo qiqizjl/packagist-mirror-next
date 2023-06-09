@@ -1,0 +1,54 @@
+{
+    "minified": "composer/2.0",
+    "packages": {
+        "alex-first-composer/first-composer": [
+            {
+                "name": "alex-first-composer/first-composer",
+                "description": "",
+                "keywords": [],
+                "homepage": "",
+                "version": "v1.0.3",
+                "version_normalized": "1.0.3.0",
+                "license": [
+                    "MIT"
+                ],
+                "authors": [
+                    {
+                        "name": "zhengze",
+                        "email": "zhengze@beihai365.com"
+                    }
+                ],
+                "source": {
+                    "url": "https://gitee.com/guanyuan/first-composer.git",
+                    "type": "git",
+                    "reference": "32f1e376b93cc6ffaf6412a9903e477f34439dd6"
+                },
+                "dist": null,
+                "type": "library",
+                "time": "2021-02-08T08:53:49+00:00",
+                "autoload": {
+                    "psr-4": {
+                        "FirstComposer\\": "src/"
+                    }
+                }
+            },
+            {
+                "version": "v1.0.2",
+                "version_normalized": "1.0.2.0",
+                "dist": "__unset"
+            },
+            {
+                "version": "v1.0.1",
+                "version_normalized": "1.0.1.0",
+                "source": {
+                    "url": "https://gitee.com/guanyuan/first-composer.git",
+                    "type": "git",
+                    "reference": "62c6f46714bc4f3dfbd20a2b7d2d5b6a8c9aeace"
+                },
+                "dist": "__unset",
+                "time": "2021-02-08T08:50:17+00:00"
+            }
+        ]
+    },
+    "security-advisories": []
+}

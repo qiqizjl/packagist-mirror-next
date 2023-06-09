@@ -52,6 +52,19 @@ func (aliOSS *AliCloudOSS) Delete(key string) error {
 	return aliOSS.bucket.DeleteObject(key)
 }
 
+func (aliOSS *AliCloudOSS) DeleteDir(prefix string) error {
+	allFile, err := aliOSS.ListObjects(prefix)
+	if err != nil {
+		return err
+	}
+	fileList := make([]string, 0)
+	for file := range allFile {
+		fileList = append(fileList, file.Key)
+	}
+	_, err = aliOSS.bucket.DeleteObjects(fileList)
+	return err
+}
+
 func (aliOSS *AliCloudOSS) ListObjects(prefix string) (chan ObjectInfo, error) {
 	objectInfoChan := make(chan ObjectInfo, 0)
 	go func() {
