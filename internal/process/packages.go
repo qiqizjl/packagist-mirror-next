@@ -2,15 +2,16 @@ package process
 
 import (
 	"context"
-	"github.com/serkanalgur/phpfuncs"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"packagist-mirror-next/internal/core/nsqx"
 	"packagist-mirror-next/internal/nsq"
 	"packagist-mirror-next/internal/svc"
 	"packagist-mirror-next/internal/syncer"
 	"sync"
 	"time"
+
+	"github.com/serkanalgur/phpfuncs"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type PackagesProcess struct {
@@ -49,36 +50,17 @@ func (p *PackagesProcess) InitProcess() error {
 func (p *PackagesProcess) Run() error {
 	p.Logger.Debugf("start run process: %s", p.GetProcessName())
 	go func() {
-		if empty, _ := p.checkQueueEmpty(); !empty {
-			p.Logger.Warn("queue is not empty, wait queue empty")
-			if err := p.waitQueueEmpty(); err != nil {
-				p.Logger.Error(err)
-				return
-			}
-			_ = p.syncer.StorePackages()
-		}
 		for {
-			time.Sleep(60 * time.Second)
+			time.Sleep(120 * time.Second)
 			p.waitGroup.Add(1)
-			notSync, err := p.syncer.Run()
+			_, err := p.syncer.Run()
 			if err != nil {
 				p.waitGroup.Done()
 				p.Logger.Errorf("syncer run error: %v", err)
 				continue
 			}
 			p.waitGroup.Done()
-			if !notSync {
-				p.Logger.Debugf("syncer run need sync")
-				if err := p.waitQueueEmpty(); err != nil {
-					p.Logger.Error(err)
-					continue
-				}
-				if err := p.syncer.StorePackages(); err != nil {
-					p.Logger.Errorf("syncer store packages error: %v", err)
-				}
-			}
 		}
-
 	}()
 	return nil
 }

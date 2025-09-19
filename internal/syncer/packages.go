@@ -4,17 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
-	"os"
 	"packagist-mirror-next/internal/core/logx"
 	"packagist-mirror-next/internal/file"
-	"packagist-mirror-next/internal/nsq"
 	"packagist-mirror-next/internal/remote"
-	"packagist-mirror-next/internal/store"
 	"packagist-mirror-next/internal/svc"
 	"packagist-mirror-next/internal/types"
+	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Packages struct {
@@ -34,7 +33,7 @@ func NewPackages(svc *context.Context, svcCtx *svc.ServiceContext) Packages {
 }
 
 func (l *Packages) Run() (bool, error) {
-	resp, respBody, LastEditTime, err := l.getPackages()
+	resp, _, LastEditTime, err := l.getPackages()
 	if err != nil {
 		l.Logger.Errorf("Get Packages Error: %s", err.Error())
 		return false, err
@@ -43,30 +42,24 @@ func (l *Packages) Run() (bool, error) {
 		l.Logger.Infof("Packages Last Sync Time is same")
 		return true, nil
 	}
-
-	for provider := range respBody.ListProvider() {
-		if err := l.dispatchProvider(provider.URL); err != nil {
-			l.Logger.Errorf("Dispatch Provider:%s Error: %s", provider.URL, err.Error())
-			return false, err
-		}
-	}
 	nwePackages, err := l.makeNewPackages(resp)
 	if err != nil {
 		l.Logger.Errorf("Make New Packages Error: %s", err.Error())
 		return false, err
 	}
-	if err := file.Store(file.GetURL("packages.json.new"), nwePackages); err != nil {
-		l.Logger.Errorf("Store New Packages Error: %s", err.Error())
+	if err := l.StorePackages(nwePackages); err != nil {
+		l.Logger.Errorf("Store Packages Error: %s", err.Error())
 		return false, err
 	}
 	if err := l.svcCtx.FileStore.SetPackagesLastSyncTime(LastEditTime); err != nil {
 		l.Logger.Errorf("Set Packages Last Sync Time Error: %s", err.Error())
+		return false, err
 	}
 	return false, nil
 }
 
 func (l *Packages) getPackages() ([]byte, *types.PackagistPackage, string, error) {
-	resp, err := l.packagist.Get("packages.json", nil)
+	resp, err := l.packagist.ApiGet("packages.json", nil)
 	if err != nil {
 		l.Logger.Errorf("Get Packages Error: %s", err.Error())
 		return nil, nil, "", err
@@ -90,20 +83,6 @@ func (l *Packages) getPackages() ([]byte, *types.PackagistPackage, string, error
 	return body, &respBody, resp.Header.Get("Last-Modified"), nil
 }
 
-func (l *Packages) dispatchProvider(url string) error {
-	if ok, _ := l.svcCtx.FileStore.IsSuccess(store.PackagistProvider, url); ok {
-		l.Logger.Debugf("Provider:%s is success", url)
-		if err := l.svcCtx.FileStore.UpdateSuccessTime(store.PackagistProvider, url); err != nil {
-			l.Logger.Errorf("Update Provider Success Time Error: %s", err.Error())
-			return err
-		}
-		return nil
-	}
-	return l.svcCtx.NSQ.Publish(&nsq.ProviderMessage{
-		URL: url,
-	})
-}
-
 // 生成新的Package文件
 func (l *Packages) makeNewPackages(body []byte) ([]byte, error) {
 	// decode
@@ -112,6 +91,8 @@ func (l *Packages) makeNewPackages(body []byte) ([]byte, error) {
 		l.Logger.Errorf("Make New Packages Unmarshal Error: %s", err.Error())
 		return nil, err
 	}
+	// repo.packagist.org替换成配置
+	respBody["metadata-url"] = strings.Replace(respBody["metadata-url"].(string), "repo.packagist.org", "repo.packagist.cloud", 1)
 	// Append Tips
 	respBody["info"] = "Welcome Use Packagist Mirrors. See https://repo.packagist.cloud/ for more information."
 	// append mirrors url
@@ -130,22 +111,14 @@ func (l *Packages) makeNewPackages(body []byte) ([]byte, error) {
 	return newBody, nil
 }
 
-func (l *Packages) StorePackages() error {
-	ioRead, err := os.ReadFile(file.GetURL("packages.json.new"))
-	if err != nil {
-		l.Logger.Errorf("Store Packages Read File Error: %s", err.Error())
-		return err
-	}
-	if err := l.svcCtx.File.Metadata.PutFileContent("packages.json", ioRead); err != nil {
+func (l *Packages) StorePackages(body []byte) error {
+	if err := l.svcCtx.File.Metadata.PutFileContent("packages.json", body); err != nil {
 		l.Logger.Errorf("Store Packages Put File Error: %s", err.Error())
 		return err
 	}
-	if err := file.Copy(file.GetURL("packages.json.new"), file.GetURL("packages.json")); err != nil {
-		l.Logger.Errorf("Store Packages Copy File Error: %s", err.Error())
-		return err
-	}
-	if err := file.Delete(file.GetURL("packages.json.new")); err != nil {
-		l.Logger.Errorf("Store Packages Delete File Error: %s", err.Error())
+	// 写入本地
+	if err := file.Store(file.GetURL("packages.json"), body); err != nil {
+		l.Logger.Errorf("Store Packages Store File Error: %s", err.Error())
 		return err
 	}
 	return nil

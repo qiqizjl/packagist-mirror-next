@@ -2,6 +2,7 @@ package nsqx
 
 import (
 	"fmt"
+
 	"github.com/nsqio/go-nsq"
 	"github.com/spf13/viper"
 )

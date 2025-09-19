@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"packagist-mirror-next/internal/core/logx"
 	"packagist-mirror-next/internal/nsq"
@@ -14,6 +13,8 @@ import (
 	"packagist-mirror-next/internal/types"
 	"strconv"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type SyncChangeList struct {
@@ -70,7 +71,7 @@ func (l *SyncChangeList) Run() error {
 
 func (l *SyncChangeList) getChangeList(lastSyncTime string) (*types.PackagistChangeListResp, error) {
 	//远程获取Change List
-	resp, err := l.packagist.Get(fmt.Sprintf("metadata/changes.json?since=%s", lastSyncTime), nil)
+	resp, err := l.packagist.ApiGet(fmt.Sprintf("metadata/changes.json?since=%s", lastSyncTime), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +128,7 @@ func (l *SyncChangeList) rsyncAllPackages() error {
 	return err
 }
 
-//  获得所有软件包
+// 获得所有软件包
 func (l *SyncChangeList) getAllPackages() ([]string, error) {
 	//远程获取All Package
 	resp, err := l.packagist.Get("packages/list.json", nil)

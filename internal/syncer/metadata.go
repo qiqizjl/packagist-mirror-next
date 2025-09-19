@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"packagist-mirror-next/internal/core/logx"
@@ -15,6 +14,8 @@ import (
 	"packagist-mirror-next/internal/svc"
 	"packagist-mirror-next/internal/types"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Metadata struct {
@@ -80,7 +81,10 @@ func (l *Metadata) update(packageName string) error {
 		l.Logger.Errorf("Get Remote Info %s,err: %s", url, err.Error())
 		return err
 	}
-	l.Logger.Debugf("Get Remote Info %s , time:%s", url, time.Now().Sub(startTime).String())
+	l.Logger.Debugf(
+		"Get Remote Info %s , time:%s,resp_code:%d,resp_header:%v",
+		url, time.Since(startTime).String(), resp.StatusCode, resp.Header,
+	)
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotModified {
 		l.Logger.Debugf("Metadata %s not modified", url)
@@ -91,11 +95,11 @@ func (l *Metadata) update(packageName string) error {
 			l.Logger.Infof("Make Error %s,err: %s", url, err.Error())
 			return err
 		}
-		return errors.New(fmt.Sprintf("Get Remote Info %s,err: %s", url, resp.Status))
+		return fmt.Errorf("get remote info %s, err: %s", url, resp.Status)
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
-	l.Logger.Debugf("io ReadAll %s , time:%s", url, time.Now().Sub(startTime).String())
+	l.Logger.Debugf("io ReadAll %s , time:%s", url, time.Since(startTime).String())
 
 	if err != nil {
 		return err
@@ -150,6 +154,7 @@ func (l *Metadata) getRemoteInfo(url string, packageName string) (*http.Response
 	}
 	header := make(http.Header)
 	header.Add("If-Modified-Since", lastModified)
+	header.Add("X-Now-Time", time.Now().Format(time.RFC3339))
 	return l.packagist.Get(url, header)
 }
 

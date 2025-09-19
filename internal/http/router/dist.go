@@ -1,11 +1,12 @@
 package router
 
 import (
+	"packagist-mirror-next/internal/core/logx"
+	"packagist-mirror-next/internal/remote"
+	"packagist-mirror-next/internal/svc"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"packagist-mirror-next/internal/core/logx"
-	"packagist-mirror-next/internal/svc"
 )
 
 type Dist struct {
@@ -38,7 +39,8 @@ func (d *Dist) DistGet(ctx *gin.Context) {
 		ctx.String(404, "Not Found")
 		return
 	}
-	resp, err := http.Get(versionInfo)
+	httpClient := remote.GetGithubClient()
+	resp, err := httpClient.Get(versionInfo)
 	if err != nil {
 		ctx.JSON(500, gin.H{
 			"error": err.Error(),
